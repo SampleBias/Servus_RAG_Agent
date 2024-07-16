@@ -48,9 +48,29 @@ def create_vector_db(conversations):
 
     for c in conversations:
         serialized_convo = f"prompt: {c['prompt']} response: {c['response']}"
-        response = ollama.embeddings
+        response = ollama.embeddings(model='nomic-embed-text', prompt=serialized_convo)
+        embedding = response['embedding']
+    
+        vector_db.add(
+            ids=[str(c['id'])],
+            embeddings=[embedding],
+            documents=[serialized_convo]
+        )
 
+def retrieve_embeddings(prompt):
+    response = ollama.embeddings(model='nomic-embed-text', prompt=prompt)
+    prompt_embeddings = response['embedding']
+
+    vector_db = client.get_collection(name='conversations')
+    results = vector_db.query(query_embeddings=[prompt_embeddings],n_results=1)
+    best_embedding = results['documents'][0][0]
+
+    return best_embedding
+
+create_vector_db(conversations=message_history)
 
 while True:
     prompt = input('USER: \n')
+    context = retrieve_embeddings(prompt=prompt)
+    prompt = f'USER PROMPT: {prompt} \nCONTEXT FROM EMBEDDINGS: {context}'
     stream_response(prompt=prompt)
