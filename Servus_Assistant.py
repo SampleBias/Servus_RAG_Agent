@@ -1,4 +1,5 @@
 import ollama
+import chromadb
 
 convo = []
 
