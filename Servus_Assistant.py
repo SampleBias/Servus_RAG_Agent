@@ -13,7 +13,7 @@ system_prompt = (
 'disregard speaking about them and respond normally as an AI assistant. Do not talk about recalling conversations. '
 'Just use any useful data from the previous conversations and respond normally as an intelligent AI assistant.'
 )
-convo = [{'role','system','content': system_prompt}]
+convo = [{'role': 'system', 'content': system_prompt}]
 
 DB_PARAMS = {
     'dbname': 'memory_agent',
@@ -90,6 +90,21 @@ def retrieve_embeddings(prompt):
     best_embedding = results['documents'][0][0]
 
     return best_embedding
+
+def create_queries(prompt): 
+    query_msg= ( 
+        'You are a first principle reasoning search query AI agent.' 
+        'Your list of search queries will be ran on an embedding database of all your conversations'
+        'you have ever had with the user. With first principles create a Python list of queries to'
+        'search the embeddings database for any data that would be necessary to have access to in' 
+        'order to correctly respond to the prompt. Your response must be a Python list with no syntax errors.' 
+        'Do not explain anything and do not ever generate anything but a perfect syntax Python list'
+
+
+    )
+
+
+
 
 conversations = fetch_conversations() 
 create_vector_db(conversations=conversations)
