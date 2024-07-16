@@ -26,8 +26,13 @@ def fetch_conversations():
 def store_conversations(prompt, response):
     conn = connect_db()
     with conn.cursor() as cursor:
-        cursor.execute()
-        
+        cursor.execute(
+            'INSERT INTO conversations (timestamp, prompt, response) VALUES (CURRENT_TIMESTAMP, %s,%s)',
+            (prompt, response)
+        )
+        conn.commit()
+    conn.close()
+     
 
 def stream_response(prompt):
     convo.append({'role': 'user', 'content': prompt})
@@ -41,6 +46,7 @@ def stream_response(prompt):
         print(content, end='', flush=True)
     
     print('\n')
+    store_conversations(prompt=prompt, response=response)
     convo.append({'role': 'assistant', 'content': response})
 
 
