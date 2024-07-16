@@ -1,6 +1,8 @@
 import ollama
 import chromadb
 
+client = chromadb.Client()
+
 convo = []
 
 def stream_response(prompt):
