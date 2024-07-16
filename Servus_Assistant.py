@@ -23,6 +23,11 @@ def fetch_conversations():
         conversations = cursor.fetchall()
         conn.close()
         return conversations
+def store_conversations(prompt, response):
+    conn = connect_db()
+    with conn.cursor() as cursor:
+        cursor.execute()
+        
 
 def stream_response(prompt):
     convo.append({'role': 'user', 'content': prompt})
