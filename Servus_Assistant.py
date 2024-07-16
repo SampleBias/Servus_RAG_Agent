@@ -35,6 +35,22 @@ def stream_response(prompt):
     print('\n')
     convo.append({'role': 'assistant', 'content': response})
 
+
+def create_vector_db(conversations):
+    vector_db_name = 'conversations'
+    
+    try:
+        client.delete_collection(name=vector_db_name)
+    except ValueError:
+        pass
+
+    vector_db = client.create_collection(name=vector_db_name)
+
+    for c in conversations:
+        serialized_convo = f"prompt: {c['prompt']} response: {c['response']}"
+        response = ollama.embeddings
+
+
 while True:
     prompt = input('USER: \n')
     stream_response(prompt=prompt)
