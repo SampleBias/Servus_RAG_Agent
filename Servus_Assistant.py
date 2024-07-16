@@ -1,25 +1,17 @@
 import ollama
 import chromadb
+import psycopg
+from psycopg.rows import dict_row
 
 client = chromadb.Client()
-message_history = [
-    {
-        'id': 1,
-        'prompt': 'What is my name?',
-        'response': 'Your name is Austin, known online as AI Austin.'
-    },
-    {
-        'id': 2,
-        'prompt': 'What is the square root of 9876?',
-        'response': '99.37806559904'
-    },
-    {
-        'id': 3,
-        'prompt': 'What kind of dog do I have?',
-        'response': 'Your dog Bernardo he is a pug. he is a light brindle and will never leave you alone'
-    }
-]
 convo = []
+DB_PARAMS = {
+    'dbname': 'memory_agent',
+    'user': 'example_user',
+    'password': 'MarioCart17',
+    'host': 'localhost',
+    'port': '5432'
+}
 
 def stream_response(prompt):
     convo.append({'role': 'user', 'content': prompt})
