@@ -12,6 +12,17 @@ DB_PARAMS = {
     'host': 'localhost',
     'port': '5432'
 }
+def connect_db():
+    conn = psycopg.connect(**DB_PARAMS)
+    return conn
+
+def fetch_conversations():
+    conn = connect_db()
+    with conn,cursor(row_factory=dict_row) as cursor:
+        cursor.execute('SELECT * FROM conversations')
+        conversations = cursor.fetchall()
+        conn.close()
+        return conversations
 
 def stream_response(prompt):
     convo.append({'role': 'user', 'content': prompt})
@@ -59,7 +70,9 @@ def retrieve_embeddings(prompt):
 
     return best_embedding
 
-create_vector_db(conversations=message_history)
+conversations = fetch_conversations() 
+create_vector_db(conversations=conversations)
+print(fetch_conversations())
 
 while True:
     prompt = input('USER: \n')
