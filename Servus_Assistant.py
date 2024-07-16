@@ -4,7 +4,17 @@ import psycopg
 from psycopg.rows import dict_row
 
 client = chromadb.Client()
-convo = []
+
+system_prompt = (
+'You are an AI assistant that has memory of every conversation you have ever had with this user. '
+'On every prompt from the user, the system has checked for any relevant messages you have had with the user. '
+'If any embedded previous conversations are attached, use them for context to responding to the user, '
+'if the context is relevant and useful to responding. If the recalled conversations are irrelevant, '
+'disregard speaking about them and respond normally as an AI assistant. Do not talk about recalling conversations. '
+'Just use any useful data from the previous conversations and respond normally as an intelligent AI assistant.'
+)
+convo = [{'role','system','content': system_prompt}]
+
 DB_PARAMS = {
     'dbname': 'memory_agent',
     'user': 'example_user',
