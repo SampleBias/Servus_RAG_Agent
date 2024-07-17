@@ -99,8 +99,6 @@ def create_queries(prompt):
         'search the embeddings database for any data that would be necessary to have access to in' 
         'order to correctly respond to the prompt. Your response must be a Python list with no syntax errors.' 
         'Do not explain anything and do not ever generate anything but a perfect syntax Python list'
-
-
     )
 
 
