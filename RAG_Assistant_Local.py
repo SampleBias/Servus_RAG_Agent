@@ -9,12 +9,12 @@ from psycopg.rows import dict_row
 client = chromadb.Client()
 
 system_prompt = (
-'You are an AI assistant that has memory of every conversation you have ever had with this user. '
-'On every prompt from the user, the system has checked for any relevant messages you have had with the user. '
-'If any embedded previous conversations are attached, use them for context to responding to the user, '
-'if the context is relevant and useful to responding. If the recalled conversations are irrelevant, '
-'disregard speaking about them and respond normally as an AI assistant. Do not talk about recalling conversations. '
-'Just use any useful data from the previous conversations and respond normally as an intelligent AI assistant.'
+    'You are an AI assistant that has memory of every conversation you have ever had with this user. '
+    'On every prompt from the user, the system has checked for any relevant messages you have had with the user. '
+    'If any embedded previous conversations are attached, use them for context to responding to the user, '
+    'if the context is relevant and useful to responding. If the recalled conversations are irrelevant, '
+    'disregard speaking about them and respond normally as an AI assistant. Do not talk about recalling conversations. '
+    'Just use any useful data from the previous conversations and respond normally as an intelligent AI assistant.'
 )
 convo = [{'role': 'system', 'content': system_prompt}]
 
@@ -25,34 +25,31 @@ DB_PARAMS = {
     'host': 'localhost',
     'port': '5432'
 }
+
 def connect_db():
-    conn = psycopg.connect(**DB_PARAMS)
-    return conn
+    return psycopg.connect(**DB_PARAMS)
 
 def fetch_conversations():
-    conn = connect_db()
-    with conn, cursor(row_factory=dict_row) as cursor:
-        cursor.execute('SELECT * FROM conversations')
-        conversations = cursor.fetchall()
-        conn.close()
-        return conversations
+    with connect_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cursor:
+            cursor.execute('SELECT * FROM conversations')
+            return cursor.fetchall()
+
 def store_conversations(prompt, response):
-    conn = connect_db()
-    with conn.cursor() as cursor:
-        cursor.execute(
-            'INSERT INTO conversations (timestamp, prompt, response) VALUES (CURRENT_TIMESTAMP, %s,%s)',
-            (prompt, response)
-        )
+    with connect_db() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO conversations (timestamp, prompt, response) VALUES (CURRENT_TIMESTAMP, %s, %s)',
+                (prompt, response)
+            )
         conn.commit()
-    conn.close()
 
 def remove_last_conversation():
-    conn = connect_db()
-    with conn.cursor() as cursor:
-        cursor.execute('DELETE FROM conversations WHERE id = (SELECT MAX(id) FROM conversations)')
-        cursor.commit()
-    conn.close()
-     
+    with connect_db() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute('DELETE FROM conversations WHERE id = (SELECT MAX(id) FROM conversations)')
+        conn.commit()
+
 def stream_response(prompt):
     response = ''
     stream = ollama.chat(model='llama3', messages=convo, stream=True)
@@ -66,7 +63,6 @@ def stream_response(prompt):
     print('\n')
     store_conversations(prompt=prompt, response=response)
     convo.append({'role': 'assistant', 'content': response})
-
 
 def create_vector_db(conversations):
     vector_db_name = 'conversations'
@@ -94,10 +90,10 @@ def retrieve_embeddings(queries, results_per_query=2):
 
     for query in tqdm(queries, desc='Processing queries to vector database'):
         response = ollama.embeddings(model='nomic-embed-text', prompt=query)
-        query_embeddings = response['embeddings']
+        query_embeddings = response['embedding']
 
         vector_db = client.get_collection(name='conversations')
-        results = vector_db.query(query_embeddings=[query_embeddings],n_results=results_per_query)
+        results = vector_db.query(query_embeddings=[query_embeddings], n_results=results_per_query)
         best_embeddings = results['documents'][0]
 
         for best in best_embeddings:
@@ -105,7 +101,7 @@ def retrieve_embeddings(queries, results_per_query=2):
                  if 'yes' in classify_embedding(query=query, context=best):
                       embeddings.add(best)
 
-        return embeddings
+    return embeddings
 
 def create_queries(prompt):
     query_msg = [
@@ -117,11 +113,11 @@ def create_queries(prompt):
         'Do not explain anything and do not ever generate anything but a perfect syntax Python list'
     ]
     query_convo = [
-        {'role': 'system', 'content': query_msg},
+        {'role': 'system', 'content': '\n'.join(query_msg)},
         {'role': 'user', 'content': 'Write an email to my car insurance company and create a persuasive request for them to lower my premium.'},
-        {'role': 'assistant', 'content': ['What is the users name?', 'What is the users current auto insurance provider?', 'What is their current premium amount?']},
+        {'role': 'assistant', 'content': "['What is the user's name?', 'What is the user's current auto insurance provider?', 'What is their current premium amount?']"},
         {'role': 'user', 'content': 'how can i convert the speak function in my llama3 python voice assistant to use pyttsx3 instead?'},
-        {'role': 'assistant', 'content': ['Llama3 voice assistant', 'Python voice assistant', 'OpenAI TTS', 'openai speak']},
+        {'role': 'assistant', 'content': "['Llama3 voice assistant', 'Python voice assistant', 'OpenAI TTS', 'openai speak']"},
         {'role': 'user', 'content': prompt}
     ]
     response = ollama.chat(model='llama3', messages=query_convo)
@@ -134,10 +130,10 @@ def create_queries(prompt):
 
 def classify_embedding(query, context):    
     classify_msg = (
-        'you are an embedding classification AI agent. your input will be a prompt and one embedded chunk of text. '
-        'you will not respond as an AI assistant. you only respond "yes" or "no". '
-        'determine whether the context contains data that directly is related to the search query. '
-        'if the context is seemingly exactly what the search query needs respond "yes"; if it is anything but directly '
+        'You are an embedding classification AI agent. Your input will be a prompt and one embedded chunk of text. '
+        'You will not respond as an AI assistant. You only respond "yes" or "no". '
+        'Determine whether the context contains data that directly is related to the search query. '
+        'If the context is seemingly exactly what the search query needs respond "yes"; if it is anything but directly '
         'related respond "no". DO NOT RESPOND "yes" unless the content is highly relevant to the search query.'
     )
     classify_convo = [
@@ -159,26 +155,28 @@ def recall(prompt):
     convo.append({'role': 'user', 'content': f'MEMORIES: {embeddings} \n\n USER PROMPT: {prompt}'})
     print(f'\n{len(embeddings)} message:response embeddings added for context.')
 
-conversations = fetch_conversations() 
-create_vector_db(conversations=conversations)
+def main():
+    conversations = fetch_conversations() 
+    create_vector_db(conversations=conversations)
 
+    while True:
+        prompt = input(Fore.CYAN + 'USER: \n')
 
-while True:
-    prompt = input(Fore.CYAN + 'USER: \n')
+        if prompt[:7].lower() == '/recall':
+            prompt = prompt[8:]
+            recall(prompt=prompt)
+            stream_response(prompt=prompt)
+        elif prompt[:7].lower() == '/forget':
+            remove_last_conversation()
+            convo.pop()  # Remove the last user message
+            print('\n')
+        elif prompt[:9].lower() == '/memorize':
+            prompt = prompt[10:]
+            store_conversations(prompt=prompt, response='Memory stored.')
+            print('\n')
+        else:
+            convo.append({'role': 'user', 'content': prompt})
+            stream_response(prompt=prompt)
 
-    if prompt[:7].lower() == '/recall':
-        prompt = prompt[8:]
-        recall(prompt=prompt)
-        stream_response(prompt=prompt)
-    elif prompt[:7].lower() == '/forget':
-        remove_last_conversation()
-        convo = convo[:-2]
-        print('\n')
-    elif prompt[:9].lower() == '/memorize':
-        prompt = prompt[10:]
-        store_conversations(prompt=prompt, response='Memory stored.')
-        print('\n')
-    else:
-        convo.append({'role': 'user', 'content': prompt})
-        stream_response(prompt=prompt)
-    stream_response(prompt=prompt)
+if __name__ == "__main__":
+    main()
