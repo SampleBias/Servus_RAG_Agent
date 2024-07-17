@@ -1,6 +1,7 @@
 import ollama
 import chromadb
 import psycopg
+import ast
 from psycopg.rows import dict_row
 
 client = chromadb.Client()
@@ -81,7 +82,18 @@ def create_vector_db(conversations):
             documents=[serialized_convo]
         )
 
-def retrieve_embeddings(prompt):
+def retrieve_embeddings(queries, results_per_query=2):
+    embeddings = set()
+
+    for query in queries:
+        response = ollama.embeddings(model='nomic-embed-text', prompt=query)
+        query_embeddings = response['embeddings']
+
+        vector_db = client.get_collection(name='conversations')
+        results = vector_db.query(query_embeddings=[query_embeddings],n_results=results_per_query)
+        best_embeddings = results['documents'][0]
+
+
     response = ollama.embeddings(model='nomic-embed-text', prompt=prompt)
     prompt_embeddings = response['embedding']
 
@@ -91,19 +103,39 @@ def retrieve_embeddings(prompt):
 
     return best_embedding
 
-def create_queries(prompt): 
-    query_msg= ( 
-        'You are a first principle reasoning search query AI agent.' 
-        'Your list of search queries will be ran on an embedding database of all your conversations'
-        'you have ever had with the user. With first principles create a Python list of queries to'
-        'search the embeddings database for any data that would be necessary to have access to in' 
-        'order to correctly respond to the prompt. Your response must be a Python list with no syntax errors.' 
+def create_queries(prompt):
+    query_msg = [
+        'You are a first principle reasoning search query AI agent.',
+        'Your list of search queries will be ran on an embedding database of all your conversations',
+        'you have ever had with the user. With first principles create a Python list of queries to',
+        'search the embeddings database for any data that would be necessary to have access to in',
+        'order to correctly respond to the prompt. Your response must be a Python list with no syntax errors.',
         'Do not explain anything and do not ever generate anything but a perfect syntax Python list'
-    )
+    ]
+    query_convo = [
+        {'role': 'system', 'content': query_msg},
+        {'role': 'user', 'content': 'Write an email to my car insurance company and create a persuasive request for them to lower my premium.'},
+        {'role': 'assistant', 'content': ['What is the users name?', 'What is the users current auto insurance provider?', 'What is their current premium amount?']},
+        {'role': 'user', 'content': 'how can i convert the speak function in my llama3 python voice assistant to use pyttsx3 instead?'},
+        {'role': 'assistant', 'content': ['Llama3 voice assistant', 'Python voice assistant', 'OpenAI TTS', 'openai speak']},
+        {'role': 'user', 'content': prompt}
+    ]
+    response = ollama.chat(model='llama3', messages=query_convo)
+    print(f'\nVector database queries: {response["message"]["content"]} \n')
 
+    try:   
+        return ast.literal_eval(response['message']['content'])
+    except:
+        return [prompt]  
 
-
-
+def classify_embedding(query,contxt):    
+     classify_msg=(
+         'you are an embedding classifiaction AI agent. your input will be a prompt and one embedded chunk of text.'
+         'you will not respond as an AI assistant. you only respond "yes" or "no".'
+         'determine whether the context contains data that directly is related to the search query'
+         'if the context is seemingly exactly what tyhe search query needs respond "yes" if it is anything but directly'
+         'related respond "no". DO NOT RESPOND "yes" unless the content is highly relevant to the search query.'
+     )
 conversations = fetch_conversations() 
 create_vector_db(conversations=conversations)
 print(fetch_conversations())
