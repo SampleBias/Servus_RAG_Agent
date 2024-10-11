@@ -42,8 +42,7 @@ Once the assistant is running, you can interact with it using the following comm
 - Forget last conversation: Type `/forget` to remove the last conversation from memory.
 - Memorize information: Use `/memorize` followed by the information you want to store.
 
-Example:
-```
+
 ## How It Works
 
 1. The assistant uses Ollama for text generation and embeddings.
