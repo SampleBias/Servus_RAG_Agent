@@ -21,16 +21,29 @@ To run this project, you need to have the following dependencies installed:
    ```
    pip install -r requirements.txt
    ```
-3. Set up a PostgreSQL database named `memory_agent` with the following credentials:
+3. Set up a PostgreSQL database:
+   a. Install PostgreSQL for your operating system (macOS, Windows, or Linux) from the official website: https://www.postgresql.org/download/
+   b. Start the PostgreSQL service:
+      - On macOS: `brew services start postgresql` (if installed via Homebrew)
+      - On Windows: Open the Start menu and search for "Services". Find "PostgreSQL" in the list and click "Start".
+   c. Create a new database named `memory_agent`:
+      - Open a terminal or command prompt
+      - Connect to PostgreSQL: `psql -U postgres`
+      - Create the database: `CREATE DATABASE memory_agent;`
+      - Exit psql: `\q`
+   d. Update the database credentials in your configuration file:
    ```python:Servus_Assistant.py
-   startLine: 21
-   endLine: 27
+   DB_HOST = "localhost"
+   DB_PORT = "5432"
+   DB_NAME = "memory_agent"
+   DB_USER = "your_username"
+   DB_PASSWORD = "your_password"
    ```
-   Make sure to replace the example credentials with secure ones for production use.
+   Make sure to replace `your_username` and `your_password` with secure credentials for production use.
 
 4. Run the main script:
    ```
-   python RAG_Assistant_Local.py
+   python RAG_Assistant_Local.py or the RAG_Assistant.py I think both work well, so try them both out.
    ```
 
 ## Usage
